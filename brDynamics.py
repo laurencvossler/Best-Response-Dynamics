@@ -3,10 +3,12 @@ import csv
 ##main loop with inputs of if asynch (0) or synch (1), uniform is 0, non is 1, set of thetas 
 ##a "company" is a tuple of (performance, price)
 def rounds(selectMode, uniformMode = 0, thetas = None):
-    performancesA = [6, 12, 18, 24, 30]
-    pricesA = [3, 6, 9, 12, 15]
-    performancesB = [18, 36, 54, 72, 90]
-    pricesB = [9, 18, 27, 36, 45]
+
+    ##set initial values
+    performancesA = [10, 11,12,13,14,15,16,17,18,19,20]
+    pricesA = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+    performancesB = performancesA
+    pricesB = [5.5, 6.5, 7.5, 8.5, 9.5, 10.5, 11.5, 12.5, 13.5, 14.5]
     if thetas == None:
         thetas = list(x / 1000 for x in range(0, 1000))
     if selectMode == 0:
@@ -21,10 +23,11 @@ def rounds(selectMode, uniformMode = 0, thetas = None):
     pastValues = set()
     myTable()
     rnd = 1
-    ##loop for the rounds
 
+    ##loop for the rounds
     while oldA != companyA and oldB != companyB and companyA not in pastValues and companyB not in pastValues:
         if selectMode == 0:
+            ##if asynchronous, play turn of whichever company
             if turn == companyA:
                 temp = companyA
                 companyA = select(turn, performancesA, pricesA, thetas, companyB, uniformMode, 0)
@@ -38,6 +41,7 @@ def rounds(selectMode, uniformMode = 0, thetas = None):
                 oldB = temp
                 pastValues.add(oldB)
         else:
+            ##if synchronous, have both companies select new values
             oldA = companyA
             oldB = companyB
             companyA = select(companyA, performancesA, pricesA, thetas, oldB, uniformMode, 0)
@@ -45,6 +49,7 @@ def rounds(selectMode, uniformMode = 0, thetas = None):
             pastValues.add(oldA)
             pastValues.add(oldB)
 
+        ##extract values needed for table/csv
         if uniformMode == 0:
             aNC = numCustomersUniform(companyA[0], companyA[1], thetas, companyB)
             bNC = numCustomersUniform(companyB[0], companyB[1], thetas, companyA)
@@ -64,6 +69,7 @@ def rounds(selectMode, uniformMode = 0, thetas = None):
 def select(company, performances, prices, thetas, other, uniformMode, evenIDs):
     maxProfit = -(sys.maxsize) - 1
     maxTup = company
+    ##loop to find performance and price combo that results in maximum profit
     for p in performances:
         for t in prices:
             if uniformMode == 0:
@@ -71,6 +77,7 @@ def select(company, performances, prices, thetas, other, uniformMode, evenIDs):
             else:
                 companyCustomers = numCustomers(p, t, thetas, other, evenIDs)
             cst = cost(p, companyCustomers)
+            ##save this combination if larger than maxProfit
             if (companyCustomers * t) - cst > maxProfit:
                 maxProfit = (companyCustomers * t) - cst
                 maxTup = (p, t)
@@ -79,6 +86,7 @@ def select(company, performances, prices, thetas, other, uniformMode, evenIDs):
 ##determines number of customers for a company with a certain performance and price
 def numCustomers(performance, price, thetas, other, evenIDs):
     count = 0
+    ##loop through each theta and calculate utility to determine if would be a customer of this company
     for theta in thetas:
         if (theta * performance) - price > 0 and (theta * performance) - price > (theta * other[0]) - other[1]:
             count += 1
@@ -90,11 +98,12 @@ def numCustomers(performance, price, thetas, other, evenIDs):
                     count += 1               
     return count
 
-##calculates cost for a company
+##calculates cost for a company based on performance and number of customers
 def cost(performance, customers):
-    return performance * performance * (customers**(1/3)) 
+    return (performance**2) * (customers**(1/3))
 
-##if uniform
+##if uniform, way to find number of customers
+##was not working so I have been using the non-uniform function 
 def numCustomersUniform(performance, price, thetas, other):
     ##in order to not divide by zero, assume performance of 0 will lead to return 0
     if performance == 0:
@@ -122,7 +131,7 @@ def numCustomersUniform(performance, price, thetas, other):
     else:
         return int((1 - maxRatio)* len(thetas))
     
-##creates initial table
+##creates initial table/csv
 def myTable():
     with open('brDynamics.csv', mode='w') as brDynamics:
         brDynamics = csv.writer(brDynamics, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
